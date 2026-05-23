@@ -67,7 +67,15 @@ jobs:
 
       # Step 5:
       # Build the Docker image to verify the container works
-      - name: Build Docker image
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+            username: ${{secrets.DOCKERHUB_USERNAME}}
+            password: ${{secrets.DOCKERHUB_TOKEN}}
 
-        # Build Docker image using Dockerfile in current directory
-        run: docker build -t docker-cicd-api .
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+            context: .
+            push: true
+            tags: ${{ secrets.DOCKERHUB_USERNAME }}/docker-cicd-api:latest
