@@ -1,81 +1,63 @@
-# Name of the workflow shown in the GitHub Actions tab
-name: CI
+# Workflow name shown in GitHub Actions
+name: CI/CD Pipeline
 
-
-# Define when this workflow should automatically run
+# Run workflow when code is pushed to main
 on:
-
-  # Run workflow whenever code is pushed to the main branch
   push:
     branches: ["main"]
 
-  # Also run workflow whenever a pull request targets main
-  pull_request:
-    branches: ["main"]
-
-
-# Define the jobs/tasks for this workflow
 jobs:
-
-  # Name of the job
-  test-and-build:
-
-    # Operating system for the temporary GitHub virtual machine
+  build-test-push-deploy:
     runs-on: ubuntu-latest
 
-
-    # Ordered list of steps the VM will execute
     steps:
 
-      # Step 1:
-      # Download/copy the repository code into the VM
+      # Download repository code into the runner
       - name: Checkout code
         uses: actions/checkout@v4
 
-
-      # Step 2:
-      # Install Python onto the VM
+      # Install Python
       - name: Set up Python
         uses: actions/setup-python@v5
-
-        # Configuration settings for the Python setup action
         with:
-
-          # Specify Python version
           python-version: "3.11"
 
-
-      # Step 3:
       # Install project dependencies
       - name: Install dependencies
-
-        # Run shell commands inside the VM
         run: |
-
-          # Upgrade pip installer
           python -m pip install --upgrade pip
-
-          # Install all packages from requirements.txt
           pip install -r requirements.txt
 
-
-      # Step 4:
-      # Run automated tests using pytest
+      # Run automated tests
       - name: Run tests
         run: python -m pytest
 
-
-      # Step 5:
-      # Build the Docker image to verify the container works
+      # Authenticate with Docker Hub
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-            username: ${{secrets.DOCKERHUB_USERNAME}}
-            password: ${{secrets.DOCKERHUB_TOKEN}}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # Build Docker image and push to Docker Hub
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-            context: .
-            push: true
-            tags: ${{ secrets.DOCKERHUB_USERNAME }}/docker-cicd-api:latest
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/docker-cicd-api:latest
+
+      # Deploy updated container to EC2
+      - name: Deploy to EC2
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_key.pem
+          chmod 600 ~/.ssh/ec2_key.pem
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+          ssh -i ~/.ssh/ec2_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/docker-cicd-api:latest
+            docker stop docker-cicd-api || true
+            docker rm docker-cicd-api || true
+            docker run -d -p 8000:8000 --name docker-cicd-api ${{ secrets.DOCKERHUB_USERNAME }}/docker-cicd-api:latest
+          EOF
