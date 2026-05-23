@@ -51,13 +51,18 @@ The application is containerized with Docker, automatically tested with pytest, 
 ## API
 
 ```text
-http://YOUR_EC2_PUBLIC_IP:8000
+http://18.188.192.169:8000
 ```
-
 ## Health Check
 
 ```text
-http://YOUR_EC2_PUBLIC_IP:8000/health
+http://18.188.192.169:8000/health
+```
+
+## API Version
+
+```text
+http://18.188.192.169:8000/version
 ```
 
 ---
@@ -139,8 +144,8 @@ The GitHub Actions pipeline automatically runs whenever code is pushed to the `m
 ## Clone repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git
-cd YOUR_REPOSITORY
+git clone https://github.com/ArennB/Docker-CICD-Portfolio.git
+cd Docker-CICD-Portfolio
 ```
 
 ## Create virtual environment
@@ -221,3 +226,20 @@ GitHub Push
 * Monitoring and logging
 * Blue/green deployments
 * Load balancing
+---
+
+# Screenshots
+
+Below are screenshots demonstrating the working CI/CD pipeline, Docker Hub image, live deployment, and running container on AWS EC2:
+
+## 1. Docker Hub Repository
+![Docker Hub Repository](images/dockerhub-repo.png)
+
+## 2. GitHub Actions CI/CD Success
+![GitHub Actions Success](images/github-actions-success.png)
+
+## 3. Live Health Endpoint
+![Live Health Endpoint](images/live-health-endpoint.png)
+
+## 4. EC2 Instance Running Docker Container
+![EC2 Docker Container](images/ec2-docker-container.png)
